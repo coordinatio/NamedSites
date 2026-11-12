@@ -11,6 +11,14 @@ window titles: the taskbar, the alt-tab switcher, `wmctrl -l`, etc.
 Requires **Firefox 142 or newer**, desktop only — the `titlePreface` API is not
 available on Firefox for Android.
 
+## Screenshots
+
+The options page, where you manage the rules (light and dark themes):
+
+![NamedSites options page — light theme](docs/screenshots/options-light.png)
+
+![NamedSites options page — dark theme](docs/screenshots/options-dark.png)
+
 ## Features
 
 - **Per-window, dynamic prefixes** — applied and removed as you switch tabs,
@@ -28,6 +36,32 @@ available on Firefox for Android.
   install; edit or delete it like any other rule.
 - Firefox-only (uses the Firefox-specific `titlePreface` API). No frameworks,
   no build step, no runtime dependencies.
+
+## Pairs with Quake Windows (KWin)
+
+NamedSites is intended to be used together with
+[Quake Windows](https://github.com/coordinatio/kwin-quake-windows) — a KWin
+script (KDE Plasma 6) that makes any window a quake-style drop-down toggled by
+a hotkey. Quake Windows recognizes windows by **regular expressions over the
+window title** (up to 7 windows, each with its own hotkey).
+
+Raw page titles are a fragile thing to match: they change with the page,
+unread counts and notifications. NamedSites provides a **reliable anchor** —
+a fixed prefix at the very start of the window title, present for as long as
+the window's active tab is on a matching site.
+
+Example: keep the rule `rc.contentai.ru → RC:`, then in a Quake Windows slot
+enter the regex `^RC: ` (note the trailing space) and bind a hotkey. That
+hotkey now toggles the window currently showing `rc.contentai.ru`, whatever
+its page title says. The anchor follows the active tab: switch the window to
+another site and the prefix disappears.
+
+Matching tips — Quake Windows regexes are case-sensitive and search anywhere
+in the title:
+
+- Anchor the prefix with `^` so only the start of the title counts.
+- Include the trailing space (`^RC: `) to avoid matching lookalike prefixes.
+- Give each site group its own prefix to drive different hotkeys.
 
 ## Installation
 
@@ -150,6 +184,8 @@ src/
 └── icons/
 tests/
 └── matcher.test.js
+docs/
+└── screenshots/       # options-page screenshots used in this README
 ```
 
 ### Manual smoke checklist
