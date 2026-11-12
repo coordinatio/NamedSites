@@ -80,6 +80,14 @@ restarts.
 
 ### Permanent
 
+**Easiest — use the signed release:** download `namedsites-<version>.xpi` from
+the [Releases page](https://github.com/coordinatio/NamedSites/releases), then
+install it via `about:addons` → gear ⚙ → **Install Add-on From File…**. It is
+signed by Mozilla (unlisted channel), works on release Firefox, and persists
+across restarts.
+
+Or build it yourself:
+
 - **Firefox Developer Edition / Nightly / ESR**: set
   `xpinstall.signatures.required=false` in `about:config`, then build and
   install the package:
