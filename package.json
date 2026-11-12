@@ -1,0 +1,15 @@
+{
+  "name": "named-sites",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Firefox extension that prefixes the browser window title based on the active tab's URL.",
+  "scripts": {
+    "lint": "web-ext lint --source-dir src",
+    "test": "node --test tests/",
+    "run": "web-ext run --source-dir src",
+    "build": "web-ext build --source-dir src --artifacts-dir web-ext-artifacts --overwrite-dest"
+  },
+  "devDependencies": {
+    "web-ext": "^10.8.0"
+  }
+}
