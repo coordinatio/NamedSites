@@ -40,13 +40,34 @@ function isValidDomainPattern(pattern) {
   return pattern.split(".").every((label) => DOMAIN_LABEL_RE.test(label));
 }
 
-// Compile a glob ("*" = any sequence) into an anchored RegExp.
-// Every character except "*" is escaped, so regex metacharacters are literal.
-function globToRegExp(pattern) {
-  const escaped = pattern
-    .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*/g, ".*");
-  return new RegExp("^" + escaped + "$");
+// Match a glob ("*" = any sequence) against text using the classic greedy
+// two-pointer algorithm with a single backtracking star. Only "*" is a
+// wildcard; every other character is literal (case-sensitive, anchored).
+// Runs in O(n*m) worst case — no catastrophic backtracking, so a star-heavy
+// pattern plus a crafted URL cannot hang the event page (ReDoS-safe).
+function globMatch(pattern, text) {
+  let pi = 0;
+  let ti = 0;
+  let starPi = -1;
+  let starTi = 0;
+  while (ti < text.length) {
+    if (pi < pattern.length && pattern[pi] === "*") {
+      starPi = pi++;
+      starTi = ti;
+    } else if (pi < pattern.length && pattern[pi] === text[ti]) {
+      pi++;
+      ti++;
+    } else if (starPi !== -1) {
+      pi = starPi + 1;
+      ti = ++starTi;
+    } else {
+      return false;
+    }
+  }
+  while (pi < pattern.length && pattern[pi] === "*") {
+    pi++;
+  }
+  return pi === pattern.length;
 }
 
 // Normalize a user-entered prefix for use as windows.update titlePreface:
@@ -103,7 +124,7 @@ function matchUrl(url, rules) {
   } catch {
     return null;
   }
-  const hostname = parsed.hostname.toLowerCase();
+  const hostname = parsed.hostname.toLowerCase().replace(/\.+$/, "");
   for (const rule of rules) {
     if (rule === null || typeof rule !== "object" || rule.enabled === false) {
       continue;
@@ -116,7 +137,7 @@ function matchUrl(url, rules) {
       if (hostname === pattern || hostname.endsWith("." + pattern)) {
         return rule;
       }
-    } else if (globToRegExp(rule.pattern.trim()).test(url)) {
+    } else if (globMatch(rule.pattern.trim(), url)) {
       return rule;
     }
   }
@@ -126,5 +147,5 @@ function matchUrl(url, rules) {
 // Export for Node (unit tests). In the browser this file is loaded as a
 // classic script and the functions above become globals.
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { matchUrl, normalizePrefix, validateRule };
+  module.exports = { matchUrl, normalizePrefix, validateRule, normalizeDomainPattern };
 }

@@ -265,3 +265,63 @@ describe("matchUrl: bad URLs", () => {
     assert.equal(matchUrl("about:config", rules), null);
   });
 });
+
+describe("matchUrl: hardening (review fixes)", () => {
+  test("matches a trailing-dot FQDN hostname against a domain rule", () => {
+    const rule = makeRule();
+    assert.equal(matchUrl("https://rc.contentai.ru./", [rule]), rule);
+    assert.equal(matchUrl("https://mail.rc.contentai.ru./x", [rule]), rule);
+  });
+
+  test("treats a rule with omitted enabled as enabled", () => {
+    const rule = makeRule();
+    delete rule.enabled;
+    assert.equal(matchUrl("https://rc.contentai.ru/", [rule]), rule);
+  });
+
+  test("IDN URL matches a punycode domain rule", () => {
+    const rule = makeRule({ pattern: "xn--e1afmkfd.xn--p1ai" });
+    assert.equal(matchUrl("https://пример.рф/", [rule]), rule);
+  });
+
+  test("multi-star globs match correctly", () => {
+    const cases = [
+      ["*a*b*", "xxayybzz", true],
+      ["a*b*c", "aXbYc", true],
+      ["a*b*c", "aXb", false],
+      ["*a", "ba", true],
+      ["a*", "a", true],
+      ["*a*", "bab", true],
+      ["a*a", "aa", true],
+      ["a*a", "a", false],
+      ["*", "", true],
+      ["", "", true],
+      ["", "a", false],
+      ["*a*a*a*b", "aaab", true],
+    ];
+    for (const [g, path, expected] of cases) {
+      const rule = makeRule({ type: "glob", pattern: "https://x/" + g });
+      const url = "https://x/" + path;
+      assert.equal(matchUrl(url, [rule]) === rule, expected, `${g} vs ${path}`);
+    }
+  });
+
+  test("regex metacharacters . [ ] { } are literal in globs", () => {
+    const rule = makeRule({ type: "glob", pattern: "https://x/a.b[c]d{e}" });
+    assert.equal(matchUrl("https://x/a.b[c]d{e}", [rule]), rule);
+    assert.equal(matchUrl("https://x/axbxcxdxe", [rule]), null);
+  });
+
+  test("star-heavy glob does not cause catastrophic backtracking (ReDoS)", () => {
+    const rule = makeRule({
+      type: "glob",
+      pattern: "https://x/*a*a*a*a*a*a*a*a*a*a*b",
+    });
+    const url = "https://x/" + "a".repeat(60);
+    const t0 = Date.now();
+    const res = matchUrl(url, [rule]);
+    const elapsed = Date.now() - t0;
+    assert.equal(res, null);
+    assert.ok(elapsed < 500, `glob matching took ${elapsed}ms (expected < 500ms)`);
+  });
+});

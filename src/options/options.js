@@ -117,16 +117,26 @@
 
   function sanitizeRules(value) {
     if (!Array.isArray(value)) return [];
-    return value.filter(
-      (r) =>
-        r !== null &&
-        typeof r === "object" &&
-        typeof r.id === "string" &&
-        (r.type === "domain" || r.type === "glob") &&
-        typeof r.pattern === "string" &&
-        typeof r.prefix === "string" &&
-        typeof r.enabled === "boolean"
-    );
+    const seen = new Set();
+    const out = [];
+    for (const r of value) {
+      if (
+        r === null ||
+        typeof r !== "object" ||
+        typeof r.id !== "string" ||
+        (r.type !== "domain" && r.type !== "glob") ||
+        typeof r.pattern !== "string" ||
+        typeof r.prefix !== "string" ||
+        (r.enabled !== undefined && typeof r.enabled !== "boolean")
+      ) {
+        continue;
+      }
+      if (seen.has(r.id)) continue; // ignore duplicate ids from external data
+      seen.add(r.id);
+      // Normalize like the matcher: a missing "enabled" means enabled.
+      out.push({ ...r, enabled: r.enabled !== false });
+    }
+    return out;
   }
 
   function findRule(id) {
@@ -154,10 +164,8 @@
   // trimmed.
   function ruleKey(type, pattern) {
     if (type === "domain") {
-      let p = pattern.trim().toLowerCase();
-      if (p.startsWith("*.")) p = p.slice(2);
-      p = p.replace(/\.+$/, "");
-      return "domain:" + p;
+      // Reuse the matcher's normalization so duplicate detection can't drift.
+      return "domain:" + normalizeDomainPattern(pattern);
     }
     return "glob:" + pattern.trim();
   }
@@ -243,6 +251,10 @@
     if (!snap) return;
     const row = listEl.querySelector('[data-id="' + CSS.escape(snap.id) + '"]');
     let target = row && row.querySelector('[data-field="' + snap.field + '"]');
+    if (target && target.disabled && snap.field === "save") {
+      // After Save the button disables; keep focus in the row, not the add form.
+      target = row.querySelector('[data-field="pattern"]');
+    }
     if (target && target.disabled && (snap.field === "up" || snap.field === "down")) {
       // Moved to an end: keep focus on the still-usable direction button.
       target = row.querySelector(
@@ -529,10 +541,18 @@
     const index = state.rules.findIndex((r) => r.id === row.dataset.id);
     if (index < 0) return;
     const removed = state.rules[index];
+    const draftBackup = state.drafts.get(removed.id);
+    const errorBackup = state.errors.get(removed.id);
     state.drafts.delete(removed.id);
     state.errors.delete(removed.id);
     const ok = await persist(state.rules.filter((r) => r.id !== removed.id));
-    if (!ok) return;
+    if (!ok) {
+      // Write failed: restore the rule's unsaved edits (mirrors onSave).
+      if (draftBackup !== undefined) state.drafts.set(removed.id, draftBackup);
+      if (errorBackup !== undefined) state.errors.set(removed.id, errorBackup);
+      render();
+      return;
+    }
     showToast("Deleted rule #" + (index + 1) + " (“" + removed.pattern + "”).", {
       actionLabel: "Undo",
       onAction: async () => {
