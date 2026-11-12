@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>NamedSites — Options</title>
+  <link rel="icon" href="../icons/icon-48.png" type="image/png">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="page">
+
+    <header class="masthead">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" width="40" height="40" aria-hidden="true" focusable="false">
+          <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M2.5 8.5h19" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <circle cx="5.4" cy="6.5" r="0.9" fill="currentColor"/>
+          <circle cx="8" cy="6.5" r="0.9" fill="currentColor"/>
+          <circle cx="10.6" cy="6.5" r="0.9" fill="currentColor"/>
+          <path d="M6 12.2h6.2l3 2.3-3 2.3H6z" fill="currentColor" stroke="none"/>
+        </svg>
+        <div class="brand-text">
+          <h1>NamedSites</h1>
+          <p class="tagline">
+            Adds a short prefix to the browser window title when the active tab matches
+            one of your rules — so environments like <code>RC:</code> are instantly
+            recognizable in the taskbar and window switcher.
+          </p>
+        </div>
+      </div>
+
+      <figure class="preview" aria-label="Example of a prefixed window title">
+        <div class="preview-bar">
+          <span class="preview-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="preview-title" id="preview-title">Example page — Mozilla Firefox</span>
+        </div>
+        <figcaption class="preview-caption" id="preview-caption">Loading…</figcaption>
+      </figure>
+    </header>
+
+    <main>
+      <section class="rules-section" aria-labelledby="rules-heading">
+        <div class="section-head">
+          <h2 id="rules-heading">Rules <span class="count-pill" id="rule-count">0</span></h2>
+          <p class="section-note">
+            Order is priority: the <strong>first enabled rule</strong> that matches the
+            active tab wins. Use the <span class="arrow-hint" aria-hidden="true">↑ ↓</span>
+            buttons to reorder. Toggles, moves and deletions are saved instantly;
+            field edits need <em>Save</em>.
+          </p>
+        </div>
+
+        <ol class="rules-list" id="rules-list"></ol>
+
+        <div class="empty" id="empty-state" hidden>
+          <svg class="empty-mark" viewBox="0 0 24 24" width="36" height="36" aria-hidden="true" focusable="false">
+            <path d="M4 5.5h9.6l6.4 6.5-6.4 6.5H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <circle cx="8" cy="12" r="1.3" fill="currentColor"/>
+          </svg>
+          <h3>No rules yet</h3>
+          <p>
+            Add your first rule below — for example, match the domain
+            <code>rc.contentai.ru</code> and give it the prefix <code>RC:</code>.
+          </p>
+          <button type="button" class="btn ghost" id="use-example">Fill in the example</button>
+        </div>
+      </section>
+
+      <section class="add-section" aria-labelledby="add-heading">
+        <h2 id="add-heading">Add a rule</h2>
+        <form id="add-form" class="add-form" novalidate>
+          <div class="form-grid">
+            <div class="field">
+              <label for="add-type">Type</label>
+              <select id="add-type" name="type">
+                <option value="domain" selected>Domain</option>
+                <option value="glob">Glob</option>
+              </select>
+            </div>
+            <div class="field field-pattern">
+              <label for="add-pattern">Pattern</label>
+              <input type="text" id="add-pattern" name="pattern" autocomplete="off"
+                     spellcheck="false" placeholder="rc.contentai.ru">
+            </div>
+            <div class="field field-prefix">
+              <label for="add-prefix">Prefix</label>
+              <input type="text" id="add-prefix" name="prefix" autocomplete="off"
+                     spellcheck="false" placeholder="RC:">
+            </div>
+            <button type="submit" class="btn primary add-submit" id="add-submit">Add rule</button>
+          </div>
+          <p class="hint" id="add-type-hint">Hostname, e.g. rc.contentai.ru — matches the domain and all its subdomains.</p>
+          <p class="hint" id="add-prefix-hint">“RC:” is applied as “RC: ” (a trailing space is added automatically). New rules are enabled and added at the bottom of the list.</p>
+          <p class="notice warn" id="add-warn" role="status" hidden></p>
+          <p class="notice error" id="add-error" role="alert" hidden></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <p>
+        <strong>Where you’ll see it:</strong> prefixes are visible wherever your OS shows
+        window titles — the taskbar, alt-tab / window switcher, <code>wmctrl&nbsp;-l</code>.
+        Some desktop environments don’t draw a title bar in the window frame itself; that’s
+        expected, not a bug.
+      </p>
+      <p>
+        <strong>Private windows:</strong> they require the “Run in Private Windows” grant —
+        open <code>about:addons</code> → NamedSites → Allow. Without it, private tabs are
+        invisible to the extension.
+        <span class="private-status" id="private-status"></span>
+      </p>
+    </footer>
+
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <span class="toast-msg" id="toast-msg"></span>
+    <button type="button" class="toast-action" id="toast-action" hidden></button>
+    <button type="button" class="toast-close" id="toast-close" aria-label="Dismiss notification" title="Dismiss">×</button>
+  </div>
+
+  <noscript><p class="noscript">The NamedSites options page needs JavaScript to manage rules.</p></noscript>
+
+  <script src="../matcher.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
