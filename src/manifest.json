@@ -17,7 +17,7 @@
   },
   "permissions": ["tabs", "storage"],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["matcher.js", "background.js"]
   },
   "icons": {
     "48": "icons/icon-48.png",
